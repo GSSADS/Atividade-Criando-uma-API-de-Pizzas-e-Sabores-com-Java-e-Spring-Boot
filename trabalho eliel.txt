@@ -1,0 +1,255 @@
+Definição das Entidades
+Pizza.java
+package com.exemplo.pizzaapi.model;
+
+import javax.persistence.*;
+import java.math.BigDecimal;
+import java.util.List;
+
+@Entity
+public class Pizza {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String nome;
+    private String tamanho;
+    private BigDecimal preco;
+
+    @ManyToMany
+    @JoinTable(
+            name = "pizza_sabor",
+            joinColumns = @JoinColumn(name = "pizza_id"),
+            inverseJoinColumns = @JoinColumn(name = "sabor_id")
+    )
+    private List<Sabor> sabores;
+
+    // Getters e Setters
+}
+
+Sabor.java
+package com.exemplo.pizzaapi.model;
+
+import javax.persistence.*;
+
+@Entity
+public class Sabor {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String nome;
+    private String descricao;
+    private String categoria;
+
+    // Getters e Setters
+}
+Repositórios
+package com.exemplo.pizzaapi.repository;
+
+import com.exemplo.pizzaapi.model.Pizza;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PizzaRepository extends JpaRepository<Pizza, Long> {
+}
+SaborRepository.java
+package com.exemplo.pizzaapi.repository;
+
+import com.exemplo.pizzaapi.model.Sabor;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SaborRepository extends JpaRepository<Sabor, Long> {
+}
+Serviços
+PizzaService.java
+package com.exemplo.pizzaapi.service;
+
+import com.exemplo.pizzaapi.model.Pizza;
+import com.exemplo.pizzaapi.repository.PizzaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class PizzaService {
+
+    @Autowired
+    private PizzaRepository pizzaRepository;
+
+    public List<Pizza> listarTodas() {
+        return pizzaRepository.findAll();
+    }
+
+    public Optional<Pizza> obterPorId(Long id) {
+        return pizzaRepository.findById(id);
+    }
+
+    public Pizza salvar(Pizza pizza) {
+        return pizzaRepository.save(pizza);
+    }
+
+    public void excluir(Long id) {
+        pizzaRepository.deleteById(id);
+    }
+}
+SaborService.java
+package com.exemplo.pizzaapi.service;
+
+import com.exemplo.pizzaapi.model.Sabor;
+import com.exemplo.pizzaapi.repository.SaborRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class SaborService {
+
+    @Autowired
+    private SaborRepository saborRepository;
+
+    public List<Sabor> listarTodos() {
+        return saborRepository.findAll();
+    }
+
+    public Optional<Sabor> obterPorId(Long id) {
+        return saborRepository.findById(id);
+    }
+
+    public Sabor salvar(Sabor sabor) {
+        return saborRepository.save(sabor);
+    }
+
+    public void excluir(Long id) {
+        saborRepository.deleteById(id);
+    }
+}
+(Controllers)
+PizzaController.java
+package com.exemplo.pizzaapi.controller;
+
+import com.exemplo.pizzaapi.model.Pizza;
+import com.exemplo.pizzaapi.service.PizzaService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/pizzas")
+public class PizzaController {
+
+    @Autowired
+    private PizzaService pizzaService;
+
+    @GetMapping
+    public List<Pizza> listarTodas() {
+        return pizzaService.listarTodas();
+    }
+
+    @GetMapping("/{id}")
+    public Pizza obterPorId(@PathVariable Long id) {
+        Optional<Pizza> pizza = pizzaService.obterPorId(id);
+        return pizza.orElseThrow(() -> new RuntimeException("Pizza não encontrada"));
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Pizza criar(@RequestBody Pizza pizza) {
+        return pizzaService.salvar(pizza);
+    }
+
+    @PutMapping("/{id}")
+    public Pizza atualizar(@PathVariable Long id, @RequestBody Pizza pizza) {
+        pizza.setId(id);
+        return pizzaService.salvar(pizza);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluir(@PathVariable Long id) {
+        pizzaService.excluir(id);
+    }
+}
+SaborController.java
+package com.exemplo.pizzaapi.controller;
+
+import com.exemplo.pizzaapi.model.Sabor;
+import com.exemplo.pizzaapi.service.SaborService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/sabores")
+public class SaborController {
+
+    @Autowired
+    private SaborService saborService;
+
+    @GetMapping
+    public List<Sabor> listarTodos() {
+        return saborService.listarTodos();
+    }
+
+    @GetMapping("/{id}")
+    public Sabor obterPorId(@PathVariable Long id) {
+        Optional<Sabor> sabor = saborService.obterPorId(id);
+        return sabor.orElseThrow(() -> new RuntimeException("Sabor não encontrado"));
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Sabor criar(@RequestBody Sabor sabor) {
+        return saborService.salvar(sabor);
+    }
+
+    @PutMapping("/{id}")
+    public Sabor atualizar(@PathVariable Long id, @RequestBody Sabor sabor) {
+        sabor.setId(id);
+        return saborService.salvar(sabor);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluir(@PathVariable Long id) {
+        saborService.excluir(id);
+    }
+}
+application.properties
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.h2.console.enabled=true
+spring.jpa.hibernate.ddl-auto=update
+
+Testando a API
+GET /pizzas: Listar todas as pizzas.
+
+GET /pizzas/{id}: Obter uma pizza pelo ID.
+
+POST /pizzas: Criar uma nova pizza.
+
+PUT /pizzas/{id}: Atualizar uma pizza.
+
+DELETE /pizzas/{id}: Excluir uma pizza.
+
+GET /sabores: Listar todos os sabores.
+
+GET /sabores/{id}: Obter um sabor pelo ID.
+
+POST /sabores: Criar um novo sabor.
+
+PUT /sabores/{id}: Atualizar um sabor.
+
+DELETE /sabores/{id}: Excluir um sabor.
